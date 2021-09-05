@@ -58,7 +58,7 @@ class NewCommand extends Command {
     cli.action.start('Fetching formidablejs');
 
     const skeleton = path.join(tmpdir(), 'formidablejs-master.zip');
-    const location = args.name;
+    const location = path.join(process.cwd(), args.name);
 
     downloadFile('https://github.com/formidablejs/formidablejs/archive/refs/heads/main.zip', skeleton).then( async (response) => {
       if (response !== true) return cli.action.stop('Could not fetch formidablejs');
