@@ -1,6 +1,6 @@
 {
   "name": "@formidablejs/craftsman",
-  "version": "0.0.1-rc2",
+  "version": "0.0.1-rc3",
   "author": "Donald Pakkies <donaldpakkies@gmail.com>",
   "bin": {
     "craftsman": "./bin/run"
@@ -56,6 +56,7 @@
     "axios": "^0.21.1",
     "chalk": "^2.4.2",
     "db-migrate": "^0.11.12",
+    "inquirer": "^6.5.2",
     "nodemon": "^2.0.12",
     "unzipper": "^0.10.11"
   }
