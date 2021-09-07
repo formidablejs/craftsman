@@ -4,14 +4,16 @@
  * Please, feel free to contribute.
  */
 
-const { Command } = require('@oclif/command');
+const { cli } = require('cli-ux');
+const { Command, flags } = require('@oclif/command');
 const { default: axios } = require('axios');
+const { default: chalk } = require('chalk');
+const { exec } = require('child_process');
 const { tmpdir } = require('os');
+const inquirer = require('inquirer');
 const fs = require('fs');
 const path = require('path');
-const { cli } = require('cli-ux');
 const unzipper = require('unzipper');
-const { exec } = require('child_process');
 
 const downloadFile = (fileUrl, outputLocationPath) => {
   const writer = fs.createWriteStream(outputLocationPath);
@@ -44,26 +46,28 @@ class NewCommand extends Command {
     {
 			name: 'name',
 			required: true,
-			description: 'Application name'
+			description: 'API name'
 		},
   ];
 
   async run() {
-    const { args } = this.parse(NewCommand);
+    const { args, flags } = this.parse(NewCommand);
+
+    if (/[^a-z0-9-_]/gi.test(args.name)) {
+      return this.error(`${chalk.red('Invalid name.')}`);
+    }
 
     if (fs.existsSync(args.name)) {
       return this.error(`A folder with the name "${args.name}" already exists`);
     }
 
-    cli.action.start('Fetching formidablejs');
-
     const skeleton = path.join(tmpdir(), 'formidablejs-master.zip');
     const location = path.join(process.cwd(), args.name);
 
-    downloadFile('https://github.com/formidablejs/formidablejs/archive/refs/heads/main.zip', skeleton).then( async (response) => {
-      if (response !== true) return cli.action.stop('Could not fetch formidablejs');
+    console.log('⚡ We will scaffold your application in a few seconds.\n');
 
-      cli.action.start('Creating Formidablejs project');
+    downloadFile('https://github.com/formidablejs/formidablejs/archive/refs/heads/main.zip', skeleton).then( async (response) => {
+      if (response !== true) return console.error('Could not fetch formidablejs');
 
       const directory = await unzipper.Open.file(skeleton);
 
@@ -77,91 +81,136 @@ class NewCommand extends Command {
         if (entry.type == 'Directory') {
           fs.mkdirSync(entryPath, {
             recursive: true
-          })
+          });
         } else {
-          entry.stream()
-            .pipe(fs.createWriteStream(entryPath))
-            .on('error', (error) => {
-              console.error('Could not create Formidablejs project');
+          if (entry.path.split('/').pop() !== 'package-lock.json') {
+            entry.stream()
+              .pipe(fs.createWriteStream(entryPath))
+              .on('error', (error) => {
+                console.error('Could not create Formidablejs project');
 
-              this.exit;
-            })
+                this.exit;
+              });
+
+            console.log(chalk.green('CREATE') + ' ' + entryPath);
+          }
         }
       });
 
-      cli.action.start('Installing dependencies');
+      if (!flags.manager) {
+        const res = await inquirer.prompt([{
+          name: 'manager',
+          message: 'Which package manager do you want to use?',
+          type: 'list',
+          choices: [{name:'npm'}, {name: 'yarn'}],
+        }]);
 
-      installDependencies(location)
+        flags.manager = res.manager;
+      }
+
+      cli.action.start('Installation in progress, this may take a while ☕');
+
+      installDependencies(flags.manager, location, args.name)
     }).catch(() => {
-      cli.action.stop('Could not fetch formidablejs');
+      console.log('Could not scaffold your application');
     });
   }
 };
 
 NewCommand.description = `Craft a new Formidable application`;
 
-const installDependencies = (location) => {
-  const install = exec('npm i --legacy-peer-deps', {
+const installDependencies = (manager, location, name) => {
+  const install = exec(manager == 'npm' ? 'npm i --legacy-peer-deps' : 'yarn install --legacy-peer-deps', {
     cwd: location
   });
 
-  install.stdout.pipe(process.stdout);
+  let failed = false;
+
+  install.stderr.on('data', (data) => {
+    failed = true;
+
+    console.error(data);
+  });
 
   install.on('exit', () => {
-    publishEmails(location);
+    if (failed) {
+      cli.action.stop('Failed');
+
+      fs.rmSync(location, {
+        recursive: true
+      });
+
+      console.log(chalk.red('REMOVE ') + location);
+
+      return;
+    }
+
+    publishEmails(manager, location, name);
   });
 }
 
-const publishEmails = (location) => {
+const publishEmails = (manager, location, name) => {
   cli.action.start('Setting up application');
 
   const publish = exec('craftsman install --package=@formidablejs/framework -v', {
     cwd: location
   });
 
-  publish.stdout.pipe(process.stdout);
-
   publish.on('exit', () => {
-    publishTemplates(location);
+    publishTemplates(manager, location, name);
   });
 }
 
-const publishTemplates = (location) => {
+const publishTemplates = (manager, location, name) => {
   const publish = exec('craftsman install --package=@formidablejs/mailer -v', {
     cwd: location
   });
 
-  publish.stdout.pipe(process.stdout);
-
   publish.on('exit', () => {
-    makeEnv(location);
+    makeEnv(manager, location, name);
   });
 }
 
-const makeEnv = (location) => {
+const makeEnv = (manager, location, name) => {
   fs.copyFileSync(path.join(location, '.env.example'), path.join(location, '.env'));
 
   const env = exec('craftsman key', {
     cwd: location
   });
 
-  env.stdout.pipe(process.stdout);
-
   env.on('exit', () => {
-    cacheConfig(location);
+    setPackageName(location, name);
+    cacheConfig(manager, location, name);
   });
 }
 
-const cacheConfig = (location) => {
+const setPackageName = (location, name) => {
+  const packageName = path.join(location, 'package.json');
+
+  const package = JSON.parse(fs.readFileSync(packageName).toString());
+
+  package.name = name.replaceAll(' ', '-');
+
+  fs.writeFileSync(packageName, JSON.stringify(package, null, 2));
+}
+
+const cacheConfig = (manager, location, name) => {
   const cache = exec('craftsman cache', {
     cwd: location
   });
 
-  cache.stdout.pipe(process.stdout);
-
   cache.on('exit', () => {
     cli.action.stop('Done');
+
+    console.log(chalk.green('\n✅ Your application is ready!'));
+    console.log(chalk.green('👉 Get started with the following commands:\n'));
+    console.log(chalk.dim(`$  cd ${name}`));
+    console.log(chalk.dim(`$  ${manager} start`));
   });
+}
+
+NewCommand.flags = {
+  manager: flags.string({ options: ['npm', 'yarn'], char: 'm' }),
 }
 
 module.exports = NewCommand;
