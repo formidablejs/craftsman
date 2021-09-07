@@ -2,6 +2,7 @@ const { Command } = require('@oclif/command');
 const { default: chalk } = require('chalk');
 const fs = require('fs');
 const path = require('path');
+const updateLine = require('../utils/updateLine');
 
 /**
  * Generates a key for the application.
@@ -26,20 +27,12 @@ class KeyCommand extends Command {
       return console.error('No .env file found');
     }
 
-    const envContent = fs.readFileSync(envPath, 'utf8');
-
-    const env = [];
-
-    envContent.split('\n').map((line) => {
+    updateLine(envPath, (line) => {
       if (line.startsWith('APP_KEY')) {
         line = `APP_KEY=${generate(40)}`;
       }
 
-      env.push(line);
-    });
-
-    fs.writeFileSync(envPath, env.join('\n'), {
-      encoding: 'utf8',
+      return line;
     });
 
     this.log(chalk.green('Application key set successfully.'));
