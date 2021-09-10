@@ -108,7 +108,7 @@ class NewCommand extends Command {
         flags.manager = res.manager;
       }
 
-      cli.action.start('Installation in progress, this may take a while ☕');
+      cli.action.start('Installation in progress. This might take a while ☕');
 
       installDependencies(flags.manager, location, args.name)
     }).catch(() => {
@@ -124,27 +124,19 @@ const installDependencies = (manager, location, name) => {
     cwd: location
   });
 
-  let failed = false;
-
   install.stderr.on('data', (data) => {
-    failed = true;
+    cli.action.stop('Failed');
+
+    fs.rmSync(location, {
+      recursive: true
+    });
 
     console.error(data);
+
+    console.log(chalk.red('REMOVE ') + location);
   });
 
   install.on('exit', () => {
-    if (failed) {
-      cli.action.stop('Failed');
-
-      fs.rmSync(location, {
-        recursive: true
-      });
-
-      console.log(chalk.red('REMOVE ') + location);
-
-      return;
-    }
-
     publishEmails(manager, location, name);
   });
 }

@@ -10,11 +10,11 @@ class CacheCommand extends Command {
 
     cli.action.start('Caching');
 
-    cache(1, flags.debug);
+    cache(flags.debug);
   }
 }
 
-const cache = (tick = 1, debug) => {
+const cache = (debug) => {
   const output = path.join(process.cwd(), 'node_modules', '.cache', 'formidable')
 
   const command = `node node_modules/.bin/imba build server.cli.imba --outdir=${output} --clean`
@@ -28,10 +28,8 @@ const cache = (tick = 1, debug) => {
       await Application.then((app) => {
         fs.rmSync(output, { recursive: true });
 
-        if (tick === 1) {
-          cache(2, debug);
-
-          return;
+        if (typeof app.cache == 'function') {
+          app.cache();
         }
 
         cli.action.stop();
