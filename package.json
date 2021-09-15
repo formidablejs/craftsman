@@ -1,6 +1,6 @@
 {
   "name": "@formidablejs/craftsman",
-  "version": "0.0.1-rc4",
+  "version": "0.1.0-alpha.1",
   "author": "Donald Pakkies <donaldpakkies@gmail.com>",
   "bin": {
     "craftsman": "./bin/run"
@@ -24,9 +24,9 @@
   "homepage": "https://github.com/formidablejs/craftsman",
   "keywords": [
     "formidable",
+    "formidablejs",
     "craftsman",
-    "development cli",
-    "oclif"
+    "development cli"
   ],
   "license": "MIT",
   "main": "src/index.js",
