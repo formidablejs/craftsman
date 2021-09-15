@@ -1,4 +1,4 @@
-const { Command } = require('@oclif/command');
+const { Command, flags } = require('@oclif/command');
 const { default: chalk } = require('chalk');
 const fs = require('fs');
 const path = require('path');
@@ -21,10 +21,20 @@ const generate = (length) => {
 
 class KeyCommand extends Command {
   async run() {
-    const envPath = path.join(process.cwd(), '.env');
+    const { flags } = this.parse(KeyCommand);
+
+    let environment = flags.env ? `.${flags.env}` : '';
+
+    let envPath = path.join(process.cwd(), `.env${environment}`);
+
+    if (environment == '.local' && !fs.existsSync(envPath)) {
+      environment = ''
+
+      envPath = path.join(process.cwd(), `.env`);
+    }
 
     if (!fs.existsSync(envPath)) {
-      return console.error('No .env file found');
+      return console.error(`No .env${environment} file found.`);
     }
 
     updateLine(envPath, (line) => {
@@ -40,5 +50,9 @@ class KeyCommand extends Command {
 }
 
 KeyCommand.description = `Set the application key`;
+
+KeyCommand.flags = {
+  env: flags.option({ char: 'e', description: 'Application environment', default: 'local', options: ['local', 'testing', 'development', 'staging', 'production'] }),
+}
 
 module.exports = KeyCommand;
