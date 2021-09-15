@@ -1,12 +1,19 @@
 const { Command, flags } = require('@oclif/command')
 const { exec } = require('child_process')
+const Cache = require('./cache')
 const nodemon = require('nodemon');
 
 class ServeCommand extends Command {
   async run() {
     const { flags } = this.parse(ServeCommand);
 
-    if (flags.dev || flags.test) {
+    if (isNaN(flags.port)) {
+      return this.error('Port must be a number');
+    }
+
+    process.env.FORMIDABLE_PORT = flags.port;
+
+    if (flags.dev) {
       const minify     = flags.minify ? '--minify' : '';
       const _minify    = flags['no-minify'] ? '--no-minify' : '';
       const _sourceMap = flags['no-sourcemap'] ? '-S' : '';
@@ -14,10 +21,8 @@ class ServeCommand extends Command {
 
       const server = nodemon({
         ext: 'imba',
-        ignore: ['bootstrap/compiled'],
-        exec: flags.test
-          ? `node node_modules/.bin/imba build server.cli.imba ${_minify} ${minify} ${_sourceMap} ${_hashing} --outdir=bootstrap/compiled --clean && node node_modules/.bin/imba server.imba`
-          : 'node node_modules/.bin/imba server.imba'
+        ignore: ['dist'],
+        exec: `node node_modules/.bin/craftsman build ${_minify} ${minify} ${_sourceMap} ${_hashing} && node node_modules/.bin/imba server.imba`
       });
 
       server.on('start', () => {
@@ -34,6 +39,8 @@ class ServeCommand extends Command {
 
       return;
     }
+
+    await Cache.run(['--env', flags.env, '--continue']);
 
     const command = `node node_modules/.bin/imba server.imba`;
 
@@ -52,12 +59,14 @@ class ServeCommand extends Command {
 ServeCommand.description = `Serve Formidable application`;
 
 ServeCommand.flags = {
-  dev : flags.boolean({char: 'd', description: 'Serve in dev mode'}),
-  test: flags.boolean({char: 't', description: 'Serve in dev mode and compile a test build'}),
-  minify: flags.boolean({char: 'm', description: 'Minify generated files'}),
+  'no-hashing': flags.boolean({char: 'H', description: 'Disable hashing' }),
   'no-minify': flags.boolean({char: 'M', description: 'Disable minifying', default: true }),
   'no-sourcemap': flags.boolean({char: 'S', description: 'Disable sourcemaps', default: true }),
-  'no-hashing': flags.boolean({char: 'H', description: 'Disable hashing' }),
+  dev : flags.boolean({char: 'd', description: 'Serve in dev mode'}),
+  env: flags.option({ char: 'e', description: 'The environment to build for', default: 'local', options: ['local', 'testing', 'development', 'staging', 'production'] }),
+  exit: flags.boolean({char: 'e', description: 'Exit after cache', default: false }),
+  minify: flags.boolean({char: 'm', description: 'Minify generated files'}),
+  port: flags.string({ char: 'p', description: 'Port to serve on', default: '3000' }),
 };
 
 module.exports = ServeCommand;

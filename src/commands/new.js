@@ -108,9 +108,22 @@ class NewCommand extends Command {
         flags.manager = res.manager;
       }
 
+      const res = await inquirer.prompt([{
+        name: 'dbDriver',
+        message: 'Which database do you want to use?' + chalk.dim(' (You can change this later)'),
+        type: 'list',
+        default: 'SQLite',
+        choices: [
+          { name: 'SQLite'},
+          { name: 'MySQL'},
+          { name: 'PostgreSQL'},
+          { name: chalk.dim('I will set this up later') }
+        ],
+      }]);
+
       cli.action.start('Installation in progress. This might take a while ☕');
 
-      installDependencies(flags.manager, location, args.name)
+      installDependencies(flags.manager, location, args.name, res.dbDriver);
     }).catch(() => {
       console.log('Could not scaffold your application');
     });
@@ -119,21 +132,79 @@ class NewCommand extends Command {
 
 NewCommand.description = `Craft a new Formidable application`;
 
-const installDependencies = (manager, location, name) => {
-  const install = exec(manager == 'npm' ? 'npm i --legacy-peer-deps' : 'yarn install --legacy-peer-deps', {
+const installDependencies = (manager, location, name, dbDriver) => {
+  const install = exec(manager == 'npm' ? `npm i --legacy-peer-deps` : `yarn install --legacy-peer-deps`, {
     cwd: location
   });
 
   install.stderr.on('data', (data) => {
-    cli.action.stop('Failed');
+    if (
+      data.trim().toLowerCase().startsWith('err!')
+      || data.trim().toLowerCase().startsWith('npm err!')
+    ) {
+      console.error(data);
 
-    fs.rmSync(location, {
-      recursive: true
-    });
+      cli.action.stop('Failed');
 
-    console.error(data);
+      fs.rmSync(location, {
+        recursive: true
+      });
 
-    console.log(chalk.red('REMOVE ') + location);
+      console.log(chalk.red('REMOVE ') + location);
+
+      process.exit(0);
+    }
+  });
+
+  install.on('exit', () => {
+    installDatabaseDriver(manager, location, name, dbDriver);
+  });
+}
+
+const installDatabaseDriver = (manager, location, name, dbDriver) => {
+  switch (dbDriver) {
+    case 'SQLite':
+      dbDriver = 'db-migrate-sqlite3';
+      break;
+
+    case 'MySQL':
+      dbDriver = 'db-migrate-mysql';
+      break;
+
+    case 'PostgreSQL':
+      dbDriver = 'db-migrate-pg';
+      break;
+
+    default:
+      dbDriver = ''
+      break;
+  }
+
+  if (dbDriver == '') {
+    return publishEmails(manager, location, name);
+  }
+
+  const install = exec(manager == 'npm' ? `npm i ${dbDriver} --legacy-peer-deps` : `yarn add ${dbDriver} --legacy-peer-deps`, {
+    cwd: location
+  });
+
+  install.stderr.on('data', (data) => {
+    if (
+      data.trim().toLowerCase().startsWith('err!')
+      || data.trim().toLowerCase().startsWith('npm err!')
+    ) {
+      console.error(data);
+
+      cli.action.stop('Failed');
+
+      fs.rmSync(location, {
+        recursive: true
+      });
+
+      console.log(chalk.red('REMOVE ') + location);
+
+      process.exit(0);
+    }
   });
 
   install.on('exit', () => {
