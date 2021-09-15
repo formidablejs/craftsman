@@ -1,7 +1,9 @@
 const { Command, flags } = require('@oclif/command');
 const { exec } = require('child_process');
+const Cache = require('./cache');
 
 class BuildCommand extends Command {
+
   async run() {
     const { flags } = this.parse(BuildCommand)
 
@@ -11,11 +13,9 @@ class BuildCommand extends Command {
     const _sourceMap = flags['no-sourcemap'] ? '-S' : ''
     const _hashing = flags['no-hashing'] ? '-H' : ''
 
-    let command = `node node_modules/.bin/imba build server.imba ${_minify} ${minify} ${_hashing} --outdir=${outdir} --clean`
+    await Cache.run(['--env', flags.env]);
 
-    if (flags.test) {
-      command = `node node_modules/.bin/imba build server.cli.imba ${_minify} ${minify} ${_sourceMap} ${_hashing} --outdir=bootstrap/compiled --clean`
-    }
+    const command = `node node_modules/.bin/imba build server.app.imba ${_minify} ${minify} ${_sourceMap} ${_hashing} --outdir=${outdir} --clean`
 
     const imba = exec(command)
 
@@ -32,8 +32,8 @@ class BuildCommand extends Command {
 BuildCommand.description = `Build Formidable application`
 
 BuildCommand.flags = {
-  test: flags.boolean({char: 't', description: 'Compile a test build'}),
-  outdir: flags.string({char: 'o', description: 'Directort to output files'}),
+  env: flags.option({ char: 'e', description: 'The environment to build for', default: 'local', options: ['local', 'testing', 'development', 'staging', 'production'] }),
+  outdir: flags.string({char: 'o', description: 'Directort to output files', default: 'dist'}),
   minify: flags.boolean({char: 'm', description: 'Minify generated files'}),
   'no-minify': flags.boolean({char: 'M', description: 'Disable minifying'}),
   'no-sourcemap': flags.boolean({char: 'S', description: 'Disable sourcemaps', default: true }),
