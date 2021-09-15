@@ -3,7 +3,7 @@ const path = require('path');
 
 class RoutesCommand extends Command {
   async run() {
-    const { Application } = require(path.join(process.cwd(), 'bootstrap', 'compiled', 'server.cli.js'));
+    const { Application } = require(path.join(process.cwd(), 'dist', 'server.app.js'));
 
     await Application.then((app) => {
       console.table(app.routes());
