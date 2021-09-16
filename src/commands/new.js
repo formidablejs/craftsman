@@ -10,10 +10,11 @@ const { default: axios } = require('axios');
 const { default: chalk } = require('chalk');
 const { exec } = require('child_process');
 const { tmpdir } = require('os');
-const inquirer = require('inquirer');
 const fs = require('fs');
+const inquirer = require('inquirer');
 const path = require('path');
 const unzipper = require('unzipper');
+const updateLine = require('../utils/updateLine');
 
 const downloadFile = (fileUrl, outputLocationPath) => {
   const writer = fs.createWriteStream(outputLocationPath);
@@ -39,6 +40,13 @@ const downloadFile = (fileUrl, outputLocationPath) => {
       });
     });
   });
+}
+
+const settings = {
+  dbDriver: '',
+  location: '',
+  name: '',
+  manager: '',
 }
 
 class NewCommand extends Command {
@@ -106,24 +114,39 @@ class NewCommand extends Command {
         }]);
 
         flags.manager = res.manager;
+      } else {
+        console.log(chalk.dim(`Installing with ${flags.manager}...`));
       }
 
-      const res = await inquirer.prompt([{
-        name: 'dbDriver',
-        message: 'Which database do you want to use?' + chalk.dim(' (You can change this later)'),
-        type: 'list',
-        default: 'SQLite',
-        choices: [
-          { name: 'SQLite'},
-          { name: 'MySQL'},
-          { name: 'PostgreSQL'},
-          { name: chalk.dim('I will set this up later') }
-        ],
-      }]);
+      if (!flags.database) {
+        const res = await inquirer.prompt([{
+          name: 'dbDriver',
+          message: 'Which database do you want to use?' + chalk.dim(' (You can change this later)'),
+          type: 'list',
+          default: 'MySQL / MariaDB',
+          choices: [
+            { name: 'MySQL / MariaDB' },
+            { name: 'PostgreSQL / Amazon Redshift' },
+            { name: 'SQLite' },
+            { name: 'MSSQL' },
+            { name: 'Oracle' },
+            { name: chalk.dim('I will set this up later') }
+          ],
+        }]);
+
+        flags.database = res.dbDriver;
+      } else {
+        if (flags.database !== 'skip') console.log(chalk.dim(`Using ${flags.database}...`));
+      }
 
       cli.action.start('Installation in progress. This might take a while ☕');
 
-      installDependencies(flags.manager, location, args.name, res.dbDriver);
+      settings.dbDriver = flags.database.toLowerCase();
+      settings.location = location;
+      settings.name = args.name;
+      settings.manager = flags.manager;
+
+      installDependencies();
     }).catch(() => {
       console.log('Could not scaffold your application');
     });
@@ -132,61 +155,72 @@ class NewCommand extends Command {
 
 NewCommand.description = `Craft a new Formidable application`;
 
-const installDependencies = (manager, location, name, dbDriver) => {
-  const install = exec(manager == 'npm' ? `npm i --legacy-peer-deps` : `yarn install --legacy-peer-deps`, {
-    cwd: location
-  });
+const installDependencies = () => {
+  const install = exec(
+    settings.manager == 'npm'
+      ? `npm i --legacy-peer-deps`
+      : `yarn install --legacy-peer-deps`,
+      { cwd: settings.location }
+    );
 
   install.stderr.on('data', (data) => {
-    if (
-      data.trim().toLowerCase().startsWith('err!')
-      || data.trim().toLowerCase().startsWith('npm err!')
-    ) {
+    if (data.trim().toLowerCase().startsWith('err!') || data.trim().toLowerCase().startsWith('npm err!')) {
       console.error(data);
 
       cli.action.stop('Failed');
 
-      fs.rmSync(location, {
+      fs.rmSync(settings.location, {
         recursive: true
       });
 
-      console.log(chalk.red('REMOVE ') + location);
+      console.log(chalk.red('REMOVE ') + settings.location);
 
       process.exit(0);
     }
   });
 
   install.on('exit', () => {
-    installDatabaseDriver(manager, location, name, dbDriver);
+    installDatabaseDriver();
   });
 }
 
-const installDatabaseDriver = (manager, location, name, dbDriver) => {
-  switch (dbDriver) {
-    case 'SQLite':
-      dbDriver = 'db-migrate-sqlite3';
+const installDatabaseDriver = () => {
+  let driver = ''
+
+  switch (settings.dbDriver) {
+    case 'mysql / mariadb':
+      driver = 'mysql';
       break;
 
-    case 'MySQL':
-      dbDriver = 'db-migrate-mysql';
+    case 'postgresql / amazon redshift':
+      driver = 'pg';
       break;
 
-    case 'PostgreSQL':
-      dbDriver = 'db-migrate-pg';
+    case 'sqlite':
+      driver = 'sqlite3';
+      break;
+
+    case 'mssql':
+      driver = 'tedious';
+      break;
+
+    case 'oracle':
+      driver = 'oracledb';
       break;
 
     default:
-      dbDriver = ''
+      driver = ''
       break;
   }
 
-  if (dbDriver == '') {
-    return publishEmails(manager, location, name);
-  }
+  if (driver == '') return publishEmails();
 
-  const install = exec(manager == 'npm' ? `npm i ${dbDriver} --legacy-peer-deps` : `yarn add ${dbDriver} --legacy-peer-deps`, {
-    cwd: location
-  });
+  const install = exec(
+    settings.manager == 'npm'
+      ? `npm i ${driver} --save --legacy-peer-deps`
+      : `yarn add ${driver} --legacy-peer-deps`,
+      { cwd: settings.location }
+    );
 
   install.stderr.on('data', (data) => {
     if (
@@ -197,69 +231,109 @@ const installDatabaseDriver = (manager, location, name, dbDriver) => {
 
       cli.action.stop('Failed');
 
-      fs.rmSync(location, {
+      fs.rmSync(settings.location, {
         recursive: true
       });
 
-      console.log(chalk.red('REMOVE ') + location);
+      console.log(chalk.red('REMOVE ') + settings.location);
 
       process.exit(0);
     }
   });
 
   install.on('exit', () => {
-    publishEmails(manager, location, name);
+    publishEmails();
   });
 }
 
-const publishEmails = (manager, location, name) => {
+const publishEmails = () => {
   cli.action.start('Setting up application');
 
   const publish = exec('craftsman install --package=@formidablejs/framework -v', {
-    cwd: location
+    cwd: settings.location
   });
 
   publish.on('exit', () => {
-    publishTemplates(manager, location, name);
+    publishTemplates();
   });
 }
 
-const publishTemplates = (manager, location, name) => {
+const publishTemplates = () => {
   const publish = exec('craftsman install --package=@formidablejs/mailer -v', {
-    cwd: location
+    cwd: settings.location
   });
 
   publish.on('exit', () => {
-    makeEnv(manager, location, name);
+    makeEnv();
   });
 }
 
-const makeEnv = (manager, location, name) => {
-  fs.copyFileSync(path.join(location, '.env.example'), path.join(location, '.env'));
+const makeEnv = () => {
+  fs.copyFileSync(path.join(settings.location, '.env.example'), path.join(settings.location, '.env'));
 
   const env = exec('craftsman key', {
-    cwd: location
+    cwd: settings.location
   });
 
   env.on('exit', () => {
-    setPackageName(location, name);
-    cacheConfig(manager, location, name);
+    setPackageName();
+    setDatabase();
   });
 }
 
-const setPackageName = (location, name) => {
-  const packageName = path.join(location, 'package.json');
+const setPackageName = () => {
+  const packageName = path.join(settings.location, 'package.json');
 
   const package = JSON.parse(fs.readFileSync(packageName).toString());
 
-  package.name = name.replaceAll(' ', '-');
+  package.name = settings.name.replaceAll(' ', '-');
 
   fs.writeFileSync(packageName, JSON.stringify(package, null, 2));
 }
 
-const cacheConfig = (manager, location, name) => {
+const setDatabase = () => {
+  if (settings.dbDriver == 'skip' || settings.dbDriver == 'i will set this up later') {
+    return cacheConfig();
+  }
+
+  let connection;
+
+  switch (settings.dbDriver) {
+    case 'mysql / mariadb':
+      connection = 'mysql';
+      break;
+
+    case 'postgresql / amazon redshift':
+      connection = 'pgsql';
+      break;
+
+    case 'sqlite':
+      connection = 'sqlite';
+      break;
+
+    case 'mssql':
+      connection = 'mssql';
+      break;
+
+    case 'oracle':
+      connection = 'oracle';
+      break;
+  }
+
+  updateLine(path.join(settings.location, '.env'), (line) => {
+    if (line.startsWith('DB_CONNECTION')) {
+      line = `DB_CONNECTION=${connection}`;
+    }
+
+    return line;
+  });
+
+  cacheConfig();
+}
+
+const cacheConfig = () => {
   const cache = exec('craftsman cache', {
-    cwd: location
+    cwd: settings.location
   });
 
   cache.on('exit', () => {
@@ -267,13 +341,14 @@ const cacheConfig = (manager, location, name) => {
 
     console.log(chalk.green('\n✅ Your application is ready!'));
     console.log(chalk.green('👉 Get started with the following commands:\n'));
-    console.log(chalk.dim(`$  cd ${name}`));
-    console.log(chalk.dim(`$  ${manager} start`));
+    console.log(chalk.dim(`$  cd ${settings.name}`));
+    console.log(chalk.dim(`$  ${settings.manager} start`));
   });
 }
 
 NewCommand.flags = {
   manager: flags.string({ options: ['npm', 'yarn'], char: 'm' }),
+  database: flags.string({ options: ['MySQL / MariaDB', 'PostgreSQL / Amazon Redshift', 'SQLite', 'MSSQL', 'skip'], char: 'd' }),
 }
 
 module.exports = NewCommand;
