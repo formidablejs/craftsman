@@ -1,49 +1,6 @@
 const { Command, flags } = require('@oclif/command');
-const DBMigrate = require('db-migrate');
-const fs = require('fs');
+const { default: chalk } = require('chalk');
 const path = require('path');
-// const { cli } = require('cli-ux')
-// const { exec } = require('child_process');
-
-// const output = path.join(process.cwd(), 'node_modules', '.cache', 'formidable', 'database', 'migrations');
-
-// if (fs.existsSync(output) && fs.statSync(output).isDirectory()) {
-//   fs.rmSync(output, { recursive: true });
-// }
-
-const migrationsDir = path.join(process.cwd(), 'database', 'migrations');
-
-const database = (name = 'migrations') => {
-  return DBMigrate.getInstance(true, {
-    cwd: migrationsDir.substring(0, migrationsDir.lastIndexOf('/')),
-    config: 'bootstrap/cache/database.json',
-    name: [name],
-    env: 'default',
-  });
-};
-
-// /**
-//  * Compile imba migration files.
-//  *
-//  * @param {string} file
-//  * @param {string} output
-//  * @returns {Promise}
-//  */
-//  const compile = (migrationsDir) => {
-// 	return new Promise((resolve, reject) => {
-//     fs.readdirSync(migrationsDir).filter(async (migration) => {
-//       if (path.extname(migration) === '.imba') {
-//         let file = path.join(migrationsDir, migration)
-
-//         exec(`node node_modules/.bin/imbac ${file} --output=${output}`, (error, stdout, stderr) => {
-//           if (error) return reject(error);
-
-//           resolve(stdout ? stdout : stderr);
-//         })
-//       }
-//     });
-// 	})
-// }
 
 class MigrateCommand extends Command {
   static args = [
@@ -54,7 +11,8 @@ class MigrateCommand extends Command {
       options: [
         'up',
         'down',
-        'refresh'
+        'rollback',
+        'latest',
       ]
     }
   ];
@@ -62,44 +20,55 @@ class MigrateCommand extends Command {
   async run() {
     const { flags, args } = this.parse(MigrateCommand);
 
-    if (!fs.existsSync(migrationsDir)) return this.error('No migrations found');
+    const { Application } = require(path.join(process.cwd(), 'dist', 'server.app.js'));
 
-    let count = 0;
+    await Application.then(async (app) => {
+      console.log('Using environment: ' + chalk.cyan(app.config.get('app.env')));
 
-    fs.readdirSync(migrationsDir).filter((migration) => {
-      if (path.extname(migration) === '.js') {
-        count = count + 1;
+      let results;
+
+      if (args.action === 'up' || args.action === 'down') {
+        results = await app.migration().migrate(flags.migration, args.action == 'up' ? true : false);
+      } else if (args.action == 'latest') {
+        results = await app.migration().latest();
+      } else if (args.action == 'rollback') {
+        results = await app.migration().rollback(flags.all);
       }
+
+      if (results == false) {
+        throw new Error('Migration failed');
+      }
+
+      if (results[1].length > 0) {
+        results[1].forEach((migration) => {
+          console.log((
+            args.action == 'rollback'
+              ? chalk.redBright('Rollback: ')
+              : chalk.green('Migrate: ')
+          ) + migration)
+        });
+
+        return;
+      }
+
+      console.log(chalk.redBright('No migrations to run'));
     });
 
-    const action = args.action == 'refresh' ? 'reset' : args.action;
-    const specOrCount = (flags.migration ? flags.migration : (flags.count ?? null)) ?? count;
-
-    database()[action](specOrCount);
-
-    // compile(migrationsDir)
-    //   .then(() => {
-    //     const action = args.action == 'refresh' ? 'reset' : args.action;
-    //     const specOrCount = (flags.migration ? flags.migration : (flags.count ?? null)) ?? count;
-
-    //     database()[action](specOrCount);
-    //   })
-    //   .catch((error) => {
-    //     console.error(error);
-    //   });
+    this.exit();
   }
 }
 
 MigrateCommand.description = `Handle migrations
 
-up               Run the database migrations
-down             Rollback all database migrations
-refresh          Migrates all currently executed migrations down
+up               Runs the specified or latest migration
+down             Will undo the specified or latest migration
+rollback         Rolls back the latest migration group
+latest           Runs the latest migration
 `
 
 MigrateCommand.flags = {
   migration: flags.string({ char: 'm', description: 'Target specific migration' }),
-  count: flags.integer({ char: 'c', description: 'Number of migrations to be executed' }),
+  all: flags.boolean({ char: 'a', description: 'Rollback all migrations', default: true }),
 };
 
 module.exports = MigrateCommand;
