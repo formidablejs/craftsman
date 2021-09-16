@@ -1,6 +1,6 @@
 const { cli } = require('cli-ux')
-const { exec } = require('child_process');
 const { Command, flags } = require('@oclif/command');
+const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -30,9 +30,7 @@ const cache = (flags) => {
       await Application.then((app) => {
         fs.rmSync(output, { recursive: true });
 
-        if (typeof app.cache == 'function') {
-          app.cache();
-        }
+        app.cache();
 
         cli.action.stop();
       });
