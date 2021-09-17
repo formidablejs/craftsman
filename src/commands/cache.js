@@ -30,7 +30,7 @@ const cache = (flags) => {
       await Application.then((app) => {
         fs.rmSync(output, { recursive: true });
 
-        app.cache();
+        app.cache(flags.dist);
 
         cli.action.stop();
       });
@@ -60,7 +60,8 @@ CacheCommand.description = `Cache application config`
 CacheCommand.flags = {
   debug: flags.boolean({char: 'd', description: 'Run in debug mode - show errors if cache fails'}),
   env: flags.option({ char: 'e', description: 'The environment to build for', default: 'local', options: ['local', 'testing', 'development', 'staging', 'production'] }),
-  continue: flags.boolean({char: 'x', description: 'Continue running after cache', default: false})
+  continue: flags.boolean({char: 'x', description: 'Continue running after cache', default: false}),
+  dist: flags.boolean({char: 'i', description: 'Distribute cache', default: false}),
 }
 
 module.exports = CacheCommand
