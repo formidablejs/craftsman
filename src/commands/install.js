@@ -48,7 +48,7 @@ class InstallCommand extends Command {
     const publisher = installer.publish();
 
     if (flags.config) {
-      if (!publisher.vendor.paths) {
+      if (!publisher.config.paths) {
         return console.log('Nothing to publish');
       }
 
