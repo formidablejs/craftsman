@@ -86,6 +86,8 @@ class MakeCommand extends Command {
 }
 
 const parseBoolean = (value) => {
+  if (value == undefined) return true;
+
   if (['true','false'].includes(value.toLowerCase())) {
     return JSON.parse(value);
   }
