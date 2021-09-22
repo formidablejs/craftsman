@@ -7,7 +7,7 @@ class BuildCommand extends Command {
   async run() {
     const { flags } = this.parse(BuildCommand)
 
-    const outdir = flags.outdir ?? 'dist'
+    const outdir = flags.outdir ?? '.formidable'
     const minify = flags.minify ? '--minify' : ''
     const _minify = flags['no-minify'] ? '--no-minify' : ''
     const _sourceMap = flags['no-sourcemap'] ? '-S' : ''
@@ -33,7 +33,7 @@ BuildCommand.description = `Build Formidable application`
 
 BuildCommand.flags = {
   env: flags.option({ char: 'e', description: 'The environment to build for', default: 'local', options: ['local', 'testing', 'development', 'staging', 'production'] }),
-  outdir: flags.string({char: 'o', description: 'Directort to output files', default: 'dist'}),
+  outdir: flags.string({char: 'o', description: 'Directort to output files', default: '.formidable'}),
   minify: flags.boolean({char: 'm', description: 'Minify generated files'}),
   'no-minify': flags.boolean({char: 'M', description: 'Disable minifying'}),
   'no-sourcemap': flags.boolean({char: 'S', description: 'Disable sourcemaps', default: true }),

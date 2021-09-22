@@ -5,7 +5,7 @@ const path = require('path');
 class SeedCommand extends Command {
 
   async run() {
-    const { Application } = require(path.join(process.cwd(), 'dist', 'server.app.js'));
+    const { Application } = require(path.join(process.cwd(), '.formidable', 'server.app.js'));
 
     await Application.then(async (app) => {
       console.log('Using environment: ' + chalk.cyan(app.config.get('app.env')));
