@@ -21,7 +21,7 @@ class ServeCommand extends Command {
 
       const server = nodemon({
         ext: 'imba',
-        ignore: ['dist'],
+        ignore: ['dist', '.formidable'],
         exec: `node node_modules/.bin/craftsman build ${_minify} ${minify} ${_sourceMap} ${_hashing} && node node_modules/.bin/imba server.imba`
       });
 
