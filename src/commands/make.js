@@ -54,7 +54,7 @@ class MakeCommand extends Command {
         let [key, value] = options[opt].split(':');
 
         build = Object.assign(build, {
-          [key]: isNaN(value) ? value : Number(value)
+          [key]: isNaN(value) ? parseBoolean(value) : Number(value)
         });
       });
 
@@ -84,6 +84,16 @@ class MakeCommand extends Command {
     throw new Error(`${args.resource} not created.`);
   }
 }
+
+const parseBoolean = (value) => {
+  if (value == undefined) return true;
+
+  if (['true','false'].includes(value.toLowerCase())) {
+    return JSON.parse(value);
+  }
+
+  return value;
+};
 
 MakeCommand.description = `Make resource`
 MakeCommand.flags = {
