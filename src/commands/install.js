@@ -2,10 +2,12 @@ const { Command, flags } = require('@oclif/command');
 const path = require('path');
 const fs = require('fs');
 const fse = require('fs-extra');
+const { default: chalk } = require('chalk');
 
 class InstallCommand extends Command {
   async run() {
     const { flags } = this.parse(InstallCommand);
+    console.warn(chalk.redBright('Use of the install command is deprecated. Please use the publish command instead.'));
 
     const dir = path.join(process.cwd(), 'node_modules', flags.package);
 
