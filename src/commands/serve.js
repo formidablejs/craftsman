@@ -18,12 +18,11 @@ class ServeCommand extends Command {
       const _minify    = flags['no-minify'] ? '--no-minify' : '';
       const _sourceMap = flags['no-sourcemap'] ? '-S' : '';
       const _hashing   = flags['no-hashing'] ? '-H' : '';
-      const silent     = flags.silent ? '--silent' : '';
 
       const server = nodemon({
         ext: 'imba',
         ignore: ['dist', '.formidable'],
-        exec: `node node_modules/.bin/craftsman build ${silent} ${_minify} ${minify} ${_sourceMap} ${_hashing} && node node_modules/.bin/imba server.imba`
+        exec: `node node_modules/.bin/craftsman build --silent ${_minify} ${minify} ${_sourceMap} ${_hashing} && node node_modules/.bin/imba server.imba`
       });
 
       server.on('start', () => {
@@ -68,7 +67,6 @@ ServeCommand.flags = {
   exit: flags.boolean({char: 'e', description: 'Exit after cache', default: false }),
   minify: flags.boolean({char: 'm', description: 'Minify generated files'}),
   port: flags.string({ char: 'p', description: 'Port to serve on', default: '3000' }),
-  silent: flags.boolean({char: 's', description: 'Disable output'}),
 };
 
 module.exports = ServeCommand;
