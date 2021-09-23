@@ -4,10 +4,9 @@ const fs = require('fs');
 const fse = require('fs-extra');
 const { default: chalk } = require('chalk');
 
-class InstallCommand extends Command {
+class PublishCommand extends Command {
   async run() {
-    const { flags } = this.parse(InstallCommand);
-    console.warn(chalk.redBright('Use of the install command is deprecated. Please use the publish command instead.'));
+    const { flags } = this.parse(PublishCommand);
 
     const dir = path.join(process.cwd(), 'node_modules', flags.package);
 
@@ -27,16 +26,16 @@ class InstallCommand extends Command {
 
     definition = JSON.parse(fs.readFileSync(definition, 'utf8').toString());
 
-    let install = definition['install'];
+    let install = definition['publisher'];
 
     if (!install) {
-      return this.error('This package is not installable');
+      return this.error('This package is not publishable');
     }
 
     install = path.join(dir,install);
 
     if (!fs.existsSync(install)) {
-      return this.error('Installer does not exist');
+      return this.error('Publisher does not exist');
     }
 
     let installer = require(install).Package;
@@ -63,7 +62,7 @@ class InstallCommand extends Command {
           fs.copyFileSync(file, entry);
 
           if (fs.existsSync(entry)) {
-            this.log(`Published ${entry}`);
+            this.log(chalk.green('Published ') + entry);
           } else {
             this.error(`${entry} not published.`);
           }
@@ -85,7 +84,7 @@ class InstallCommand extends Command {
           fse.copySync(folder, entry);
 
           if (fs.existsSync(entry)) {
-            this.log(`Published ${entry}`);
+            this.log(chalk.green('Published ') + entry);
           } else {
             this.error(`${entry} not published.`);
           }
@@ -95,13 +94,13 @@ class InstallCommand extends Command {
   }
 }
 
-InstallCommand.description = `Install Formidable package`;
+PublishCommand.description = `Install Formidable package`;
 
-InstallCommand.flags = {
+PublishCommand.flags = {
   package: flags.string({ char: 'p', description: 'Package name' }),
   config: flags.boolean({ char: 'c', description: 'Publish config', default: false }),
   vendor: flags.boolean({ char: 'v', description: 'Publish vendor', default: false }),
 };
 
 
-module.exports = InstallCommand;
+module.exports = PublishCommand;
