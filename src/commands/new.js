@@ -286,7 +286,7 @@ const setPackageName = () => {
 
   const package = JSON.parse(fs.readFileSync(packageName).toString());
 
-  package.name = settings.name.replaceAll(' ', '-');
+  package.name = settings.name.replace(new RegExp(' ', 'g'), '-');
 
   fs.writeFileSync(packageName, JSON.stringify(package, null, 2));
 }
