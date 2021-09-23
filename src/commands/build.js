@@ -20,10 +20,14 @@ class BuildCommand extends Command {
     const imba = exec(command)
 
     imba.stdout.on('data', (data) => {
+      if (flags.silent) return;
+
       console.log(data.trim());
     });
 
     imba.stderr.on('data', (data) => {
+      if (flags.silent) return;
+
       console.error(data.trim());
     });
   }
@@ -38,6 +42,7 @@ BuildCommand.flags = {
   'no-minify': flags.boolean({char: 'M', description: 'Disable minifying'}),
   'no-sourcemap': flags.boolean({char: 'S', description: 'Disable sourcemaps', default: true }),
   'no-hashing': flags.boolean({char: 'H', description: 'Disable hashing' }),
+  'silent': flags.boolean({char: 's', description: 'Disable output'}),
 }
 
 module.exports = BuildCommand
