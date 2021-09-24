@@ -164,7 +164,11 @@ const installDependencies = () => {
     );
 
   install.stderr.on('data', (data) => {
-    if (data.trim().toLowerCase().startsWith('err!') || data.trim().toLowerCase().startsWith('npm err!')) {
+    if (
+      data.trim().toLowerCase().startsWith('err')
+      || data.trim().toLowerCase().startsWith('npm err')
+      || data.trim().toLowerCase().startsWith('/bin/sh:')
+    ) {
       console.error(data);
 
       cli.action.stop('Failed');
