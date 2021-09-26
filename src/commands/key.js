@@ -1,5 +1,6 @@
 const { Command, flags } = require('@oclif/command');
 const { default: chalk } = require('chalk');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const updateLine = require('../utils/updateLine');
@@ -16,7 +17,7 @@ const generate = (length) => {
     key += chars.charAt(Math.floor(Math.random() * chars.length));
   }
 
-  return key;
+  return 'base64:' + Buffer.from(key + ':' + crypto.randomBytes(8).toString('hex')).toString('base64');
 }
 
 class KeyCommand extends Command {
@@ -39,7 +40,7 @@ class KeyCommand extends Command {
 
     updateLine(envPath, (line) => {
       if (line.startsWith('APP_KEY')) {
-        line = `APP_KEY=${generate(40)}`;
+        line = `APP_KEY=${generate(32)}`;
       }
 
       return line;
