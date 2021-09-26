@@ -13,6 +13,7 @@ class MigrateCommand extends Command {
         'down',
         'rollback',
         'latest',
+        'fresh'
       ]
     }
   ];
@@ -33,11 +34,15 @@ class MigrateCommand extends Command {
         results = await app.migration().latest();
       } else if (args.action == 'rollback') {
         results = await app.migration().rollback(flags.all);
+      } else if (args.action == 'fresh') {
+        results = await app.migration().rollback(true)
+
+        if (results == false) throw new Error('Migration failed');
+
+        results = await app.migration().latest();
       }
 
-      if (results == false) {
-        throw new Error('Migration failed');
-      }
+      if (results == false) throw new Error('Migration failed');
 
       if (results[1].length > 0) {
         results[1].forEach((migration) => {
@@ -64,6 +69,7 @@ up               Runs the specified or latest migration
 down             Will undo the specified or latest migration
 rollback         Rolls back the latest migration group
 latest           Runs the latest migration
+fresh            Rolls back all migrations and runs the latest migrations
 `
 
 MigrateCommand.flags = {
