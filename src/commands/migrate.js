@@ -1,6 +1,7 @@
 const { Command, flags } = require('@oclif/command');
 const { default: chalk } = require('chalk');
 const path = require('path');
+const shouldRun = require('../utils/shouldRun');
 
 class MigrateCommand extends Command {
   static args = [
@@ -24,7 +25,16 @@ class MigrateCommand extends Command {
     const { Application } = require(path.join(process.cwd(), '.formidable', 'server.app.js'));
 
     await Application.then(async (app) => {
-      console.log('Using environment: ' + chalk.cyan(app.config.get('app.env')));
+      /** @type {String} */
+      const environment = app.config.get('app.env');
+
+      if (flags['no-interaction'] !== true) {
+        const runCommand = await shouldRun(environment);
+
+        if (!runCommand) return;
+      }
+
+      console.log('Using environment: ' + chalk.cyan(environment));
 
       let results;
 
@@ -75,6 +85,7 @@ fresh            Rolls back all migrations and runs the latest migrations
 MigrateCommand.flags = {
   migration: flags.string({ char: 'm', description: 'Target specific migration' }),
   all: flags.boolean({ char: 'a', description: 'Rollback all migrations', default: true }),
+  'no-interaction': flags.boolean({ char: 'n', description: 'Do not ask any interactive question', default: false }),
 };
 
 module.exports = MigrateCommand;
