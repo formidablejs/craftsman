@@ -1,3 +1,13 @@
+# 0.5.0-alpha.2 (2021-10-08)
+
+
+### Bug Fixes
+
+* **deps:** fix chalk import ([9d7af3c](https://github.com/formidablejs/craftsman/commit/9d7af3cf2366c781a7c9641be6153e4f60b06e0f))
+* **environment:** check if application is in production before running the shouldRun check ([24635d7](https://github.com/formidablejs/craftsman/commit/24635d75df0723b94a4b56f0360844c3e2bc9fef))
+
+
+
 # 0.5.0-alpha.1 (2021-10-08)
 
 
