@@ -1,7 +1,7 @@
 const { Command, flags } = require('@oclif/command');
 const path = require('path');
 const fs = require('fs-extra');
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 
 class DownCommand extends Command {
   async run() {

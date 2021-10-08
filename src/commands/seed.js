@@ -1,5 +1,5 @@
 const { Command } = require('@oclif/command');
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 const path = require('path');
 
 class SeedCommand extends Command {
