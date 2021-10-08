@@ -19,6 +19,10 @@ class DownCommand extends Command {
       downObject.message = flags.message;
     }
 
+    if (flags.redirect) {
+      downObject.redirect = flags.redirect;
+    }
+
     if (flags.retry) {
       downObject.retry = flags.retry;
     }
@@ -55,6 +59,7 @@ DownCommand.flags = {
   refresh: flags.integer({ description: 'The number of seconds after which the browser may refresh' }),
   secret: flags.string({ description: 'The secret phrase that may be used to bypass maintenance mode' }),
   status: flags.integer({ description: 'The status code that should be used when returning the maintenance mode response', default: 503 }),
+  redirect: flags.string({ description: 'The URL to which the browser should be redirected' }),
 }
 
 module.exports = DownCommand;
