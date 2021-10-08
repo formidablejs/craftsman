@@ -1,4 +1,4 @@
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 const fs = require('fs')
 const { exit } = require('process')
 

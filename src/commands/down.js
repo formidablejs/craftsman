@@ -1,7 +1,7 @@
 const { Command, flags } = require('@oclif/command');
 const path = require('path');
 const fs = require('fs-extra');
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 
 class DownCommand extends Command {
   async run() {
@@ -17,6 +17,10 @@ class DownCommand extends Command {
 
     if (flags.message) {
       downObject.message = flags.message;
+    }
+
+    if (flags.redirect) {
+      downObject.redirect = flags.redirect;
     }
 
     if (flags.retry) {
@@ -55,6 +59,7 @@ DownCommand.flags = {
   refresh: flags.integer({ description: 'The number of seconds after which the browser may refresh' }),
   secret: flags.string({ description: 'The secret phrase that may be used to bypass maintenance mode' }),
   status: flags.integer({ description: 'The status code that should be used when returning the maintenance mode response', default: 503 }),
+  redirect: flags.string({ description: 'The URL to which the browser should be redirected' }),
 }
 
 module.exports = DownCommand;

@@ -1,6 +1,6 @@
 {
   "name": "@formidablejs/craftsman",
-  "version": "0.4.0-alpha.1",
+  "version": "0.5.0-alpha.1",
   "author": "Donald Pakkies <donaldpakkies@gmail.com>",
   "bin": {
     "craftsman": "./bin/run"
@@ -8,8 +8,8 @@
   "bugs": "https://github.com/formidablejs/craftsman/issues",
   "devDependencies": {
     "@oclif/dev-cli": "^1.26.0",
-    "eslint": "^5.16.0",
-    "eslint-config-oclif": "^3.1.0",
+    "eslint": "^7.32.0",
+    "eslint-config-oclif": "^4.0.0",
     "globby": "^10.0.2"
   },
   "engines": {
@@ -51,12 +51,12 @@
   "dependencies": {
     "@oclif/command": "^1.8.0",
     "@oclif/config": "^1.17.0",
-    "@oclif/plugin-help": "^3.2.2",
+    "@oclif/plugin-help": "^3.2.3",
     "@oclif/plugin-plugins": "^1.10.1",
-    "axios": "^0.21.1",
-    "chalk": "^2.4.2",
-    "inquirer": "^6.5.2",
-    "nodemon": "^2.0.12",
+    "axios": "^0.22.0",
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.0",
+    "nodemon": "^2.0.13",
     "unzipper": "^0.10.11"
   }
 }

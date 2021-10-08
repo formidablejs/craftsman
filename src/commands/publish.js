@@ -1,22 +1,13 @@
 const { Command, flags } = require('@oclif/command');
+const chalk = require('chalk');
+const fs = require('fs-extra');
 const path = require('path');
-const fs = require('fs');
-const fse = require('fs-extra');
-const { default: chalk } = require('chalk');
 
 class PublishCommand extends Command {
   async run() {
     const { flags } = this.parse(PublishCommand);
 
     const dir = path.join(process.cwd(), 'node_modules', flags.package);
-
-    if (!flags.package) {
-      return this.error('Missing package name');
-    }
-
-    if (!flags.vendor && !flags.config) {
-      this.log('Nothing published');
-    }
 
     let definition = path.join(dir, 'package.json');
 
@@ -46,60 +37,61 @@ class PublishCommand extends Command {
       return this.error('publish missing');
     }
 
-    const publisher = installer.publish();
+    const tags = flags.tag.split(',');
 
-    if (flags.config) {
-      if (!publisher.config.paths) {
-        return console.log('Nothing to publish');
-      }
-
-      Object.keys(publisher.config.paths).forEach((entry) => {
-        const file = path.join(dir, publisher.config.paths[entry]);
-
-        if (fs.existsSync(entry)) {
-          this.error(`${entry} already exists. Skipping...`);
-        } else {
-          fs.copyFileSync(file, entry);
-
-          if (fs.existsSync(entry)) {
-            this.log(chalk.green('Published ') + entry);
-          } else {
-            this.error(`${entry} not published.`);
-          }
-        }
-      });
-    }
-
-    if (flags.vendor) {
-      if (!publisher.vendor.paths) {
-        return console.log('Nothing to publish');
-      }
-
-      Object.keys(publisher.vendor.paths).forEach((entry) => {
-        const folder = path.join(dir, publisher.vendor.paths[entry]);
-
-        if (fs.existsSync(entry)) {
-          this.error(`${entry} already exists. Skipping...`);
-        } else {
-          fse.copySync(folder, entry);
-
-          if (fs.existsSync(entry)) {
-            this.log(chalk.green('Published ') + entry);
-          } else {
-            this.error(`${entry} not published.`);
-          }
-        }
-      });
-    }
+    tags.forEach((tag) => {
+      publish(tag, flags.force, installer, dir);
+    });
   }
+}
+
+/**
+ * Publish tag.
+ *
+ * @param {String} tag
+ * @param {Boolean} force
+ * @param {Object} installer
+ * @param {String} dir
+ * @returns {void}
+ */
+const publish = (tag, force, installer, dir) => {
+  const publisher = installer.publish();
+
+  if (!publisher[tag] || (publisher[tag] && (publisher[tag].paths == undefined || publisher[tag].paths == null))) {
+    console.error(chalk.red(`${tag} is missing`));
+
+    return;
+  }
+
+  if (typeof publisher[tag].paths !== 'object') {
+    console.error(chalk.red(`${tag} is missing paths`));
+
+    return;
+  }
+
+  Object.keys(publisher[tag].paths).forEach((entry) => {
+    const file = path.join(dir, publisher[tag].paths[entry]);
+
+    if (fs.existsSync(entry) && !force) {
+      console.error(chalk.red(`${entry} already exists. Skipping...`));
+    } else {
+      fs.copySync(file, entry, { overwrite: true });
+
+      if (fs.existsSync(entry)) {
+        console.log(chalk.green('Published ') + entry);
+      } else {
+        console.error(`${entry} not published.`);
+      }
+    }
+  });
 }
 
 PublishCommand.description = `Install Formidable package`;
 
 PublishCommand.flags = {
-  package: flags.string({ char: 'p', description: 'Package name' }),
-  config: flags.boolean({ char: 'c', description: 'Publish config', default: false }),
-  vendor: flags.boolean({ char: 'v', description: 'Publish vendor', default: false }),
+  package: flags.string({ description: 'Package name', required: true }),
+  force: flags.boolean({ description: `Overwrite any existing files`, default: false }),
+  tag: flags.string({ description: 'One or many tags that have assets you want to publish (comma separated values allowed)', required: true }),
 };
 
 
