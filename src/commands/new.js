@@ -7,9 +7,9 @@
 const { cli } = require('cli-ux');
 const { Command, flags } = require('@oclif/command');
 const { default: axios } = require('axios');
-const chalk = require('chalk');
 const { exec } = require('child_process');
 const { tmpdir } = require('os');
+const chalk = require('chalk');
 const fs = require('fs');
 const inquirer = require('inquirer');
 const path = require('path');
@@ -253,7 +253,7 @@ const installDatabaseDriver = () => {
 const publishEmails = () => {
   cli.action.start('Setting up application');
 
-  const publish = exec('craftsman install --package=@formidablejs/framework -v', {
+  const publish = exec('craftsman publish --package=@formidablejs/framework --tag="auth-emails"', {
     cwd: settings.location
   });
 
@@ -263,7 +263,7 @@ const publishEmails = () => {
 }
 
 const publishTemplates = () => {
-  const publish = exec('craftsman install --package=@formidablejs/mailer -v', {
+  const publish = exec('craftsman publish --package=@formidablejs/mailer --tag="components,config"', {
     cwd: settings.location
   });
 
