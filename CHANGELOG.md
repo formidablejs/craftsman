@@ -1,3 +1,12 @@
+# 0.5.0-alpha.3 (2021-10-08)
+
+
+### Bug Fixes
+
+* **migrations:** remove console log ([5172e55](https://github.com/formidablejs/craftsman/pull/29/commits/5172e555d154b83c790bbafcb002ecc8af3de0ab))
+
+
+
 # 0.5.0-alpha.2 (2021-10-08)
 
 
