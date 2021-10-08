@@ -7,7 +7,7 @@
 const { cli } = require('cli-ux');
 const { Command, flags } = require('@oclif/command');
 const { default: axios } = require('axios');
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 const { exec } = require('child_process');
 const { tmpdir } = require('os');
 const fs = require('fs');

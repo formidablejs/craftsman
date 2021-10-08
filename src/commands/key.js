@@ -1,5 +1,5 @@
 const { Command, flags } = require('@oclif/command');
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');

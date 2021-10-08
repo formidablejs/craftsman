@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Command, flags } = require('@oclif/command');
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 
 const stubs = path.join(process.cwd(), 'node_modules', '@formidablejs', 'stubs', 'src', 'stubs')
 

@@ -2,7 +2,7 @@ const { Command, flags } = require('@oclif/command');
 const path = require('path');
 const fs = require('fs');
 const fse = require('fs-extra');
-const { default: chalk } = require('chalk');
+const chalk = require('chalk');
 
 class PublishCommand extends Command {
   async run() {
