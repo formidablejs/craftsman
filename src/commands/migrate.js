@@ -26,9 +26,9 @@ class MigrateCommand extends Command {
 
     await Application.then(async (app) => {
       /** @type {String} */
-      const environment = app.config.get('app.env');
+      const environment = app.config.get('app.env', 'development');
 
-      if (flags['no-interaction'] !== true) {
+      if (environment.toLowerCase().trim() == 'production' && flags['no-interaction'] !== true) {
         const runCommand = await shouldRun(environment);
 
         if (!runCommand) return;
@@ -51,6 +51,8 @@ class MigrateCommand extends Command {
 
         results = await app.migration().latest();
       }
+
+      console.log(results);
 
       if (results == false) throw new Error('Migration failed');
 
