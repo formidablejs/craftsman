@@ -2,6 +2,7 @@ const { Command, flags } = require('@oclif/command');
 const chalk = require('chalk');
 const path = require('path');
 const shouldRun = require('../utils/shouldRun');
+const fs = require('fs');
 
 class MigrateCommand extends Command {
   static args = [
@@ -21,8 +22,13 @@ class MigrateCommand extends Command {
 
   async run() {
     const { flags, args } = this.parse(MigrateCommand);
+    const server = path.join(process.cwd(), '.formidable', 'server.app.js')
 
-    const { Application } = require(path.join(process.cwd(), '.formidable', 'server.app.js'));
+    if (!fs.existsSync(server)) {
+      return this.error(chalk.red('Build missing. Run "craftsman build" to fix the problem.'));
+    }
+
+    const { Application } = require(server);
 
     await Application.then(async (app) => {
       /** @type {String} */
