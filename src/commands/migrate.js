@@ -58,8 +58,6 @@ class MigrateCommand extends Command {
         results = await app.migration().latest();
       }
 
-      console.log(results);
-
       if (results == false) throw new Error('Migration failed');
 
       if (results[1].length > 0) {
