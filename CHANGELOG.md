@@ -1,3 +1,12 @@
+# 0.6.0-alpha.1 (2021-10-14)
+
+### Features
+
+* continue if command received the  flag ([c0709fd](https://github.com/formidablejs/craftsman/commit/c0709fdc14cfb95b06d8569f8ee36d71130fcdbd))
+* use imba's watch flag and chokidar instead nodemon ([fb84036](https://github.com/formidablejs/craftsman/commit/fb8403647bf51cb69cc6230bc549181e85d1fdfe))
+
+
+
 # 0.5.0-alpha.3 (2021-10-08)
 
 

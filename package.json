@@ -1,6 +1,6 @@
 {
   "name": "@formidablejs/craftsman",
-  "version": "0.5.0-alpha.3",
+  "version": "0.6.0-alpha.1",
   "author": "Donald Pakkies <donaldpakkies@gmail.com>",
   "bin": {
     "craftsman": "./bin/run"
@@ -55,8 +55,8 @@
     "@oclif/plugin-plugins": "^1.10.1",
     "axios": "^0.22.0",
     "chalk": "^4.1.2",
+    "chokidar": "^3.5.2",
     "inquirer": "^8.2.0",
-    "nodemon": "^2.0.13",
     "unzipper": "^0.10.11"
   }
 }

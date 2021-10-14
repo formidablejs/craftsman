@@ -13,7 +13,13 @@ class BuildCommand extends Command {
     const _sourceMap = flags['no-sourcemap'] ? '-S' : ''
     const _hashing = flags['no-hashing'] ? '-H' : ''
 
-    await Cache.run(['--env', flags.env]);
+    const cacheFlags = ['--env', flags.env];
+
+    if (flags.continue) {
+      cacheFlags.push('--continue')
+    }
+
+    await Cache.run(cacheFlags);
 
     const command = `node node_modules/.bin/imba build server.app.imba ${_minify} ${minify} ${_sourceMap} ${_hashing} --outdir=${outdir} --clean`
 
@@ -43,6 +49,7 @@ BuildCommand.flags = {
   'no-sourcemap': flags.boolean({char: 'S', description: 'Disable sourcemaps', default: true }),
   'no-hashing': flags.boolean({char: 'H', description: 'Disable hashing' }),
   'silent': flags.boolean({char: 's', description: 'Disable output'}),
+  continue: flags.boolean({ char: 'x', description: 'Continue running after cache', default: false })
 }
 
 module.exports = BuildCommand
