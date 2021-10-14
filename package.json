@@ -55,8 +55,8 @@
     "@oclif/plugin-plugins": "^1.10.1",
     "axios": "^0.22.0",
     "chalk": "^4.1.2",
+    "chokidar": "^3.5.2",
     "inquirer": "^8.2.0",
-    "nodemon": "^2.0.13",
     "unzipper": "^0.10.11"
   }
 }
