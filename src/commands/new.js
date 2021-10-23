@@ -15,6 +15,7 @@ const inquirer = require('inquirer');
 const path = require('path');
 const unzipper = require('unzipper');
 const updateLine = require('../utils/updateLine');
+const getLine = require('../utils/getLine');
 
 const downloadFile = (fileUrl, outputLocationPath) => {
   const writer = fs.createWriteStream(outputLocationPath);
@@ -47,6 +48,7 @@ const settings = {
   location: '',
   name: '',
   manager: '',
+  web: false,
 }
 
 class NewCommand extends Command {
@@ -71,8 +73,9 @@ class NewCommand extends Command {
 
     const skeleton = path.join(tmpdir(), 'formidablejs-master.zip');
     const location = path.join(process.cwd(), args.name);
+    const type = flags.web ? 'web' : 'api';
 
-    console.log('⚡ We will scaffold your application in a few seconds.\n');
+    console.log(`⚡ We will scaffold your ${type} application in a few seconds.\n`);
 
     downloadFile('https://github.com/formidablejs/formidablejs/archive/refs/heads/main.zip', skeleton).then( async (response) => {
       if (response !== true) return console.error('Could not fetch formidablejs');
@@ -145,6 +148,7 @@ class NewCommand extends Command {
       settings.location = location;
       settings.name = args.name;
       settings.manager = flags.manager;
+      settings.web = flags.web;
 
       installDependencies();
     }).catch(() => {
@@ -184,9 +188,77 @@ const installDependencies = () => {
   });
 
   install.on('exit', () => {
-    installDatabaseDriver();
+    publishWeb();
   });
 }
+
+const publishWeb = () => {
+  if (settings.web) {
+    const publish = exec('craftsman publish --package=@formidablejs/framework --tag="web" --force', {
+      cwd: settings.location
+    });
+
+    publish.on('exit', () => {
+      installPrettyErrors();
+    });
+
+    return;
+  }
+
+  installPrettyErrors();
+}
+
+const installPrettyErrors = () => {
+  if (!settings.web) return installDatabaseDriver();
+
+  const install = exec(
+    settings.manager == 'npm'
+      ? `npm i @formidablejs/pretty-errors`
+      : `yarn add @formidablejs/pretty-errors`,
+      { cwd: settings.location }
+    );
+
+  install.stderr.on('data', (data) => {
+    if (
+      data.trim().toLowerCase().startsWith('err')
+      || data.trim().toLowerCase().startsWith('npm err')
+      || data.trim().toLowerCase().startsWith('/bin/sh:')
+    ) {
+      console.error(data);
+
+      cli.action.stop('Failed');
+
+      fs.rmSync(settings.location, {
+        recursive: true
+      });
+
+      console.log(chalk.red('REMOVE ') + settings.location);
+
+      process.exit(0);
+    }
+  });
+
+  install.on('exit', () => {
+    const config = path.join(settings.location, 'config', 'app.imba');
+
+    updateLine(config, (line, index) => {
+			if (
+				line.trim() == ''
+				&& getLine(config, index - 1).startsWith('import {')
+			) {
+				return "import { PrettyErrorsServiceResolver } from '@formidablejs/pretty-errors'\n"
+			}
+
+			if (line.trim() == '# Formidable Framework Service Resolvers...') {
+				return `${line}\n		PrettyErrorsServiceResolver`
+			}
+
+			return line;
+		});
+
+    installDatabaseDriver();
+  });
+};
 
 const installDatabaseDriver = () => {
   let driver = ''
@@ -353,6 +425,7 @@ const cacheConfig = () => {
 NewCommand.flags = {
   manager: flags.string({ options: ['npm', 'yarn'], char: 'm' }),
   database: flags.string({ options: ['MySQL / MariaDB', 'PostgreSQL / Amazon Redshift', 'SQLite', 'MSSQL', 'skip'], char: 'd' }),
+  web: flags.boolean({ description: 'Craft a web application', char: 'w' }),
 }
 
 module.exports = NewCommand;
