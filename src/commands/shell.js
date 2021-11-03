@@ -5,6 +5,7 @@ const { ImbaRepl, ImbaCompiler } = require('imba-shell');
 const { REPLServer } = require('repl');
 const chalk = require('chalk');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const vm = require('vm');
 
@@ -22,7 +23,7 @@ class ShellCommand extends Command {
 
     const app = await Formidable.Application;
 
-    const repl = new ImbaRepl;
+    const repl = new ImbaRepl('>>> ', path.join(os.homedir(), '.formidable_shell_history'));
 
     repl.registerCallback((ctx) => {
       const context = app.context.registered;
