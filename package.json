@@ -1,6 +1,6 @@
 {
   "name": "@formidablejs/craftsman",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "author": "Donald Pakkies <donaldpakkies@gmail.com>",
   "bin": {
     "craftsman": "./bin/run"
@@ -56,7 +56,7 @@
     "axios": "^0.22.0",
     "chalk": "^4.1.2",
     "chokidar": "^3.5.2",
-    "imba-shell": "^0.0.6",
+    "imba-shell": "^0.0.8",
     "inquirer": "^8.2.0",
     "unzipper": "^0.10.11"
   }
