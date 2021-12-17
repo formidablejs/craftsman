@@ -353,6 +353,8 @@ const makeEnv = () => {
 
   env.on('exit', () => {
     setPackageName();
+    commentOutClientUrl();
+    setSession();
     setDatabase();
   });
 }
@@ -365,6 +367,38 @@ const setPackageName = () => {
   package.name = settings.name.replace(new RegExp(' ', 'g'), '-');
 
   fs.writeFileSync(packageName, JSON.stringify(package, null, 2));
+}
+
+const commentOutClientUrl = () => {
+  if (!settings.web) return;
+
+  updateLine(path.join(settings.location, '.env'), (line) => {
+    if (line.trim() == 'CLIENT_URL=http://localhost:8000') {
+      line = '# CLIENT_URL=http://localhost:8000';
+    }
+
+    return line;
+  });
+}
+
+const setSession = () => {
+  if (!settings.web) return;
+
+  updateLine(path.join(settings.location, 'config', 'session.imba'), (line) => {
+    if (line.trim() == "driver: 'memory'") {
+      line = "	driver: 'file'";
+    }
+
+    return line;
+  });
+
+  updateLine(path.join(settings.location, 'config', 'session.imba'), (line) => {
+    if (line.trim() == "same_site: helpers.env 'SESSION_SAME_SITE', 'none'") {
+      line = "	same_site: helpers.env 'SESSION_SAME_SITE', 'lax'";
+    }
+
+    return line;
+  });
 }
 
 const setDatabase = () => {
@@ -403,6 +437,16 @@ const setDatabase = () => {
 
     return line;
   });
+
+  if (connection == 'sqlite') {
+    updateLine(path.join(settings.location, 'config', 'database.imba'), (line) => {
+      if (line.trim() == 'useNullAsDefault: null') {
+        line = '	useNullAsDefault: true';
+      }
+
+      return line;
+    });
+  }
 
   cacheConfig();
 }
