@@ -54,10 +54,10 @@ const settings = {
 class NewCommand extends Command {
   static args = [
     {
-			name: 'name',
-			required: true,
-			description: 'API name'
-		},
+      name: 'name',
+      required: true,
+      description: 'API name'
+    },
   ];
 
   async run() {
@@ -77,7 +77,7 @@ class NewCommand extends Command {
 
     console.log(`⚡ We will scaffold your ${type} application in a few seconds.\n`);
 
-    downloadFile('https://github.com/formidablejs/formidablejs/archive/refs/heads/main.zip', skeleton).then( async (response) => {
+    downloadFile('https://github.com/formidablejs/formidablejs/archive/refs/heads/main.zip', skeleton).then(async (response) => {
       if (response !== true) return console.error('Could not fetch formidablejs');
 
       const directory = await unzipper.Open.file(skeleton);
@@ -113,7 +113,7 @@ class NewCommand extends Command {
           name: 'manager',
           message: 'Which package manager do you want to use?',
           type: 'list',
-          choices: [{name:'npm'}, {name: 'yarn'}],
+          choices: [{ name: 'npm' }, { name: 'yarn' }],
         }]);
 
         flags.manager = res.manager;
@@ -164,8 +164,8 @@ const installDependencies = () => {
     settings.manager == 'npm'
       ? `npm i --legacy-peer-deps`
       : `yarn install --legacy-peer-deps`,
-      { cwd: settings.location }
-    );
+    { cwd: settings.location }
+  );
 
   install.stderr.on('data', (data) => {
     if (
@@ -215,8 +215,8 @@ const installPrettyErrors = () => {
     settings.manager == 'npm'
       ? `npm i @formidablejs/pretty-errors`
       : `yarn add @formidablejs/pretty-errors`,
-      { cwd: settings.location }
-    );
+    { cwd: settings.location }
+  );
 
   install.stderr.on('data', (data) => {
     if (
@@ -242,19 +242,19 @@ const installPrettyErrors = () => {
     const config = path.join(settings.location, 'config', 'app.imba');
 
     updateLine(config, (line, index) => {
-			if (
-				line.trim() == ''
-				&& getLine(config, index - 1).startsWith('import {')
-			) {
-				return "import { PrettyErrorsServiceResolver } from '@formidablejs/pretty-errors'\n"
-			}
+      if (
+        line.trim() == ''
+        && getLine(config, index - 1).startsWith('import {')
+      ) {
+        return "import { PrettyErrorsServiceResolver } from '@formidablejs/pretty-errors'\n"
+      }
 
-			if (line.trim() == '# Formidable Framework Service Resolvers...') {
-				return `${line}\n		PrettyErrorsServiceResolver`
-			}
+      if (line.trim() == 'MaintenanceServiceResolver') {
+        return `${line}\n		PrettyErrorsServiceResolver`
+      }
 
-			return line;
-		});
+      return line;
+    });
 
     installDatabaseDriver();
   });
@@ -295,8 +295,8 @@ const installDatabaseDriver = () => {
     settings.manager == 'npm'
       ? `npm i ${driver} --save --legacy-peer-deps`
       : `yarn add ${driver} --legacy-peer-deps`,
-      { cwd: settings.location }
-    );
+    { cwd: settings.location }
+  );
 
   install.stderr.on('data', (data) => {
     if (
