@@ -9,6 +9,7 @@ const { Command, flags } = require('@oclif/command');
 const { default: axios } = require('axios');
 const { exec } = require('child_process');
 const { tmpdir } = require('os');
+const { copySync } = require('fs-extra');
 const chalk = require('chalk');
 const fs = require('fs');
 const inquirer = require('inquirer');
@@ -49,6 +50,7 @@ const settings = {
   name: '',
   manager: '',
   web: false,
+  frontend: ''
 }
 
 class NewCommand extends Command {
@@ -142,6 +144,22 @@ class NewCommand extends Command {
         if (flags.database !== 'skip') console.log(chalk.dim(`Using ${flags.database}...`));
       }
 
+      if (flags.web && !flags.frontend) {
+        const res = await inquirer.prompt([{
+          name: 'frontend',
+          message: 'Which frontend framework do you want to use?',
+          type: 'list',
+          default: 'Imba',
+          choices: [
+            { name: 'Imba' },
+            { name: 'Vue' },
+            { name: 'React' },
+          ],
+        }]);
+
+        flags.frontend = res.frontend;
+      }
+
       cli.action.start('Installation in progress. This might take a while ☕');
 
       settings.dbDriver = flags.database.toLowerCase();
@@ -149,6 +167,7 @@ class NewCommand extends Command {
       settings.name = args.name;
       settings.manager = flags.manager;
       settings.web = flags.web;
+      settings.frontend = flags.frontend;
 
       installDependencies();
     }).catch(() => {
@@ -256,9 +275,102 @@ const installPrettyErrors = () => {
       return line;
     });
 
+    installInertia();
     installDatabaseDriver();
   });
 };
+
+const installInertia = () => {
+  if (!settings.web && settings.frontend !== 'Imba') return;
+
+  const install = exec(
+    settings.manager == 'npm'
+      ? `npm i @formidablejs/inertia@next`
+      : `yarn add @formidablejs/inertia@next`,
+    { cwd: settings.location }
+  );
+
+  install.stderr.on('data', (data) => {
+    if (
+      data.trim().toLowerCase().startsWith('err')
+      || data.trim().toLowerCase().startsWith('npm err')
+      || data.trim().toLowerCase().startsWith('/bin/sh:')
+    ) {
+      console.error(data);
+
+      cli.action.stop('Failed');
+
+      fs.rmSync(settings.location, {
+        recursive: true
+      });
+
+      console.log(chalk.red('REMOVE ') + settings.location);
+
+      process.exit(0);
+    }
+  });
+
+  install.on('exit', () => {
+    const appConfig = path.join(settings.location, 'config', 'app.imba');
+
+    updateLine(appConfig, (line, index) => {
+      if (line.trim().startsWith('import { ValidationServiceResolver }')) {
+        return `${line}\nimport { InertiaServiceResolver } from '@formidablejs/inertia'`
+      }
+
+      if (line.trim() == 'MaintenanceServiceResolver') {
+        return `${line}\n		InertiaServiceResolver`
+      }
+
+      return line;
+    });
+
+    const indexConfig = path.join(settings.location, 'config', 'index.imba');
+
+    updateLine(indexConfig, (line, index) => {
+      if (line.trim().startsWith('import hashing')) {
+        return `${line}\nimport inertia from './inertia'`
+      }
+
+      if (line.trim() == 'hashing') {
+        return `${line}\n			inertia`
+      }
+
+      return line;
+    });
+
+    /** remove welcome.imba file */
+    fs.rmSync(path.join(settings.location, 'resources', 'views', 'welcome.imba'));
+
+    exec('craftsman publish --package=@formidablejs/inertia --tag="vendor" --force', {
+      cwd: settings.location
+    });
+
+    const presetPath = path.join(settings.location, 'node_modules', '@formidablejs/inertia', 'formidable', 'presets', settings.frontend.toLowerCase(), 'preset.json');
+
+    const preset = JSON.parse(fs.readFileSync(presetPath).toString());
+
+    const presetFiles = path.join(settings.location, 'node_modules', '@formidablejs/inertia', 'formidable', 'presets', settings.frontend.toLowerCase(), preset.files)
+
+    copySync(presetFiles, settings.location)
+
+    const packageName = path.join(settings.location, 'package.json');
+
+    const package = JSON.parse(fs.readFileSync(packageName).toString());
+
+    package.scripts = Object.assign(package.scripts, preset.npm.scripts);
+    package.devDependencies = Object.assign(package.devDependencies, preset.npm.devDependencies);
+
+    fs.writeFileSync(packageName, JSON.stringify(package, null, 2));
+
+    exec(
+      settings.manager == 'npm'
+        ? `npm i --legacy-peer-deps`
+        : `yarn install --force`,
+      { cwd: settings.location }
+    );
+  });
+}
 
 const installDatabaseDriver = () => {
   let driver = ''
@@ -470,6 +582,7 @@ NewCommand.flags = {
   manager: flags.string({ options: ['npm', 'yarn'], char: 'm' }),
   database: flags.string({ options: ['MySQL / MariaDB', 'PostgreSQL / Amazon Redshift', 'SQLite', 'MSSQL', 'skip'], char: 'd' }),
   web: flags.boolean({ description: 'Craft a web application', char: 'w' }),
+  frontend: flags.string({ options: ['Imba', 'Vue', 'React'], char: 'e' }),
 }
 
 module.exports = NewCommand;
