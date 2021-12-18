@@ -276,12 +276,11 @@ const installPrettyErrors = () => {
     });
 
     installInertia();
-    installDatabaseDriver();
   });
 };
 
 const installInertia = () => {
-  if (!settings.web && settings.frontend !== 'Imba') return;
+  if (!settings.web && settings.frontend !== 'Imba') return installDatabaseDriver();;
 
   const install = exec(
     settings.manager == 'npm'
@@ -363,12 +362,16 @@ const installInertia = () => {
 
     fs.writeFileSync(packageName, JSON.stringify(package, null, 2));
 
-    exec(
+    const installFrontendDeps = exec(
       settings.manager == 'npm'
         ? `npm i --legacy-peer-deps`
         : `yarn install --force`,
       { cwd: settings.location }
     );
+
+    installFrontendDeps.on('exit', () => {
+      installDatabaseDriver();
+    });
   });
 }
 
