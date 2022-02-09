@@ -50,6 +50,7 @@ const settings = {
   manager: '',
   web: false,
   spa: false,
+  app: false,
 }
 
 class NewCommand extends Command {
@@ -161,9 +162,11 @@ class NewCommand extends Command {
       if (flags.web) {
         settings.web = flags.web;
         settings.spa = false;
+        settings.app = true;
       } else if (flags.spa) {
         settings.spa = flags.spa;
         settings.web = false;
+        settings.app = true;
       }
 
       installDependencies();
@@ -259,7 +262,7 @@ const publishSpa = () => {
 }
 
 const installPrettyErrors = () => {
-  if (!settings.web || !settings.spa) return installDatabaseDriver();
+  if (!settings.app) return installDatabaseDriver();
 
   const install = exec(
     settings.manager == 'npm'
@@ -420,7 +423,7 @@ const setPackageName = () => {
 }
 
 const commentOutClientUrl = () => {
-  if (!settings.web || !settings.spa) return;
+  if (!settings.app) return;
 
   updateLine(path.join(settings.location, '.env'), (line) => {
     if (line.trim() == 'CLIENT_URL=http://localhost:8000') {
@@ -432,7 +435,7 @@ const commentOutClientUrl = () => {
 }
 
 const setSession = () => {
-  if (!settings.web || !settings.spa) return;
+  if (!settings.app) return;
 
   updateLine(path.join(settings.location, 'config', 'session.imba'), (line) => {
     if (line.trim() == "driver: 'memory'") {
