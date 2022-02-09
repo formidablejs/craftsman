@@ -49,6 +49,7 @@ const settings = {
   name: '',
   manager: '',
   web: false,
+  spa: false,
 }
 
 class NewCommand extends Command {
@@ -73,9 +74,15 @@ class NewCommand extends Command {
 
     const skeleton = path.join(tmpdir(), 'formidablejs-master.zip');
     const location = path.join(process.cwd(), args.name);
-    const type = flags.web ? 'web' : 'api';
+    let type = 'api';
 
-    console.log(`⚡ We will scaffold your ${type} application in a few seconds.\n`);
+    if (flags.spa) {
+      type = 'spa';
+    } else if (flags.web) {
+      type = 'web';
+    }
+
+    console.log(`⚡ We will scaffold your ${type == 'spa' ? 'single-page' : type} application in a few seconds.\n`);
 
     downloadFile('https://github.com/formidablejs/formidablejs/archive/refs/heads/main.zip', skeleton).then(async (response) => {
       if (response !== true) return console.error('Could not fetch formidablejs');
@@ -150,7 +157,14 @@ class NewCommand extends Command {
       settings.location = location;
       settings.name = args.name;
       settings.manager = flags.manager;
-      settings.web = flags.web;
+
+      if (flags.web) {
+        settings.web = flags.web;
+        settings.spa = false;
+      } else if (flags.spa) {
+        settings.spa = flags.spa;
+        settings.web = false;
+      }
 
       installDependencies();
     }).catch(() => {
@@ -190,7 +204,11 @@ const installDependencies = () => {
   });
 
   install.on('exit', () => {
-    publishWeb();
+    if (settings.web) {
+      publishWeb();
+    } else {
+      publishSpa();
+    }
   });
 }
 
@@ -209,8 +227,39 @@ const publishWeb = () => {
 
   installPrettyErrors();
 }
+
+const publishSpa = () => {
+  if (settings.spa) {
+    const publish = exec('craftsman publish --package=@formidablejs/framework --tag="spa" --force', {
+      cwd: settings.location
+    });
+
+    publish.on('exit', () => {
+      const config = path.join(settings.location, 'config', 'app.imba');
+
+      updateLine(config, (line, index) => {
+        if (line.trim() == "import { RouterServiceResolver } from '../app/Resolvers/RouterServiceResolver'") {
+          return `${line}\nimport { SPAServiceResolver } from '../app/Resolvers/SPAServiceResolver'`
+        }
+
+        if (line.trim() == 'MaintenanceServiceResolver') {
+          return `${line}\n		SPAServiceResolver`
+        }
+
+        return line;
+      });
+
+      installPrettyErrors();
+    });
+
+    return;
+  }
+
+  installPrettyErrors();
+}
+
 const installPrettyErrors = () => {
-  if (!settings.web) return installDatabaseDriver();
+  if (!settings.web || !settings.spa) return installDatabaseDriver();
 
   const install = exec(
     settings.manager == 'npm'
@@ -250,7 +299,9 @@ const installPrettyErrors = () => {
         return "import { PrettyErrorsServiceResolver } from '@formidablejs/pretty-errors'\n"
       }
 
-      if (line.trim() == 'MaintenanceServiceResolver') {
+      if (settings.web && line.trim() == 'MaintenanceServiceResolver') {
+        return `${line}\n		PrettyErrorsServiceResolver`
+      } else if (settings.spa && line.trim() == 'SPAServiceResolver') {
         return `${line}\n		PrettyErrorsServiceResolver`
       }
 
@@ -369,7 +420,7 @@ const setPackageName = () => {
 }
 
 const commentOutClientUrl = () => {
-  if (!settings.web) return;
+  if (!settings.web || !settings.spa) return;
 
   updateLine(path.join(settings.location, '.env'), (line) => {
     if (line.trim() == 'CLIENT_URL=http://localhost:8000') {
@@ -381,7 +432,7 @@ const commentOutClientUrl = () => {
 }
 
 const setSession = () => {
-  if (!settings.web) return;
+  if (!settings.web || !settings.spa) return;
 
   updateLine(path.join(settings.location, 'config', 'session.imba'), (line) => {
     if (line.trim() == "driver: 'memory'") {
@@ -474,6 +525,7 @@ NewCommand.flags = {
   manager: flags.string({ options: ['npm', 'yarn'], char: 'm' }),
   database: flags.string({ options: ['MySQL / MariaDB', 'PostgreSQL / Amazon Redshift', 'SQLite', 'MSSQL', 'skip'], char: 'd' }),
   web: flags.boolean({ description: 'Craft a web application', char: 'w' }),
+  spa: flags.boolean({ description: 'Craft a single-page application', char: 's' }),
 }
 
 module.exports = NewCommand;
