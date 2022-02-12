@@ -1,6 +1,6 @@
 {
   "name": "@formidablejs/craftsman",
-  "version": "0.6.9",
+  "version": "0.6.10",
   "author": "Donald Pakkies <donaldpakkies@gmail.com>",
   "bin": {
     "craftsman": "./bin/run"
