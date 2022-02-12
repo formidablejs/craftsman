@@ -233,26 +233,41 @@ const publishWeb = () => {
 
 const publishSpa = () => {
   if (settings.spa) {
-    const publish = exec('craftsman publish --package=@formidablejs/framework --tag="spa" --force', {
-      cwd: settings.location
+    const install = exec(
+      settings.manager == 'npm'
+        ? `npm i @formidablejs/view axios`
+        : `yarn add @formidablejs/view axios`,
+      { cwd: settings.location }
+    );
+
+    install.stderr.on('data', (data) => {
+      if (
+        data.trim().toLowerCase().startsWith('err')
+        || data.trim().toLowerCase().startsWith('npm err')
+        || data.trim().toLowerCase().startsWith('/bin/sh:')
+      ) {
+        console.error(data);
+
+        cli.action.stop('Failed');
+
+        fs.rmSync(settings.location, {
+          recursive: true
+        });
+
+        console.log(chalk.red('REMOVE ') + settings.location);
+
+        process.exit(0);
+      }
     });
 
-    publish.on('exit', () => {
-      const config = path.join(settings.location, 'config', 'app.imba');
-
-      updateLine(config, (line, index) => {
-        if (line.trim() == "import { RouterServiceResolver } from '../app/Resolvers/RouterServiceResolver'") {
-          return `${line}\nimport { SPAServiceResolver } from '../app/Resolvers/SPAServiceResolver'`
-        }
-
-        if (line.trim() == 'MaintenanceServiceResolver') {
-          return `${line}\n		SPAServiceResolver`
-        }
-
-        return line;
+    install.on('exit', () => {
+      const publish = exec('craftsman publish --package=@formidablejs/view --tag="vendor" --force', {
+        cwd: settings.location
       });
 
-      installPrettyErrors();
+      publish.on('exit', () => {
+        installPrettyErrors();
+      });
     });
 
     return;
