@@ -1,24 +1,16 @@
 {
   "name": "@formidablejs/craftsman",
-  "version": "0.6.10",
+  "version": "1.0.0",
   "author": "Donald Pakkies <donaldpakkies@gmail.com>",
   "bin": {
     "craftsman": "./bin/run"
   },
   "bugs": "https://github.com/formidablejs/craftsman/issues",
-  "devDependencies": {
-    "@oclif/dev-cli": "^1.26.0",
-    "eslint": "^7.32.0",
-    "eslint-config-oclif": "^4.0.0",
-    "globby": "^10.0.2"
-  },
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=14.0.0"
   },
   "files": [
     "/bin",
-    "/npm-shrinkwrap.json",
-    "/oclif.manifest.json",
     "/src"
   ],
   "homepage": "https://github.com/formidablejs/craftsman",
@@ -30,34 +22,20 @@
   ],
   "license": "MIT",
   "main": "src/index.js",
-  "oclif": {
-    "commands": "./src/commands",
-    "bin": "craftsman",
-    "plugins": [
-      "@oclif/plugin-help"
-    ],
-    "hooks": {
-      "init": "./src/hooks/main"
-    }
-  },
   "repository": "formidablejs/craftsman",
   "scripts": {
-    "postpack": "rm -f oclif.manifest.json",
-    "posttest": "eslint .",
-    "prepack": "oclif-dev manifest && oclif-dev readme",
-    "test": "echo NO TESTS",
-    "version": "oclif-dev readme && git add README.md"
+    "build": "npm run imba:build && npm run imba:build:temp && npm run ts:build",
+    "imba:build": "imbac src --output=lib --platform=node --format=cjs --clean",
+    "imba:build:temp": "imbac src --output=.temp --platform=node --clean",
+    "imba:watch": "imbac -w src --output=lib --platform=node --clean",
+    "ts:build": "tsc",
+    "ts:watch": "tsc -w",
+    "test": "echo NO TESTS"
   },
   "dependencies": {
-    "@oclif/command": "^1.8.0",
-    "@oclif/config": "^1.17.0",
-    "@oclif/plugin-help": "^3.2.3",
-    "@oclif/plugin-plugins": "^1.10.1",
-    "axios": "^0.22.0",
-    "chalk": "^4.1.2",
-    "chokidar": "^3.5.2",
-    "imba-shell": "^0.0.8",
-    "inquirer": "^8.2.0",
-    "unzipper": "^0.10.11"
+    "@formidablejs/console": "^0.0.1"
+  },
+  "devDependencies": {
+    "imba": "^2.0.0-alpha.201"
   }
 }
